@@ -3,32 +3,35 @@ import csv
 import time
 from datetime import datetime
 import sys
-import sqlite3
 
 from dotenv import load_dotenv
 import os
 
-def init_db():
-    conn = sqlite3.connect("machine_data.db")
-    cursor = conn.cursor()
+from influxdb_client import InfluxDBClient, Point
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS measurements (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        timestamp TEXT,
-        elapsed_seconds INTEGER,
-        valore_vuoto_macchina REAL,
-        temp1 REAL, pow1 REAL,
-        temp2 REAL, pow2 REAL,
-        temp3 REAL, pow3 REAL,
-        temp4 REAL, pow4 REAL,
-        temp5 REAL, pow5 REAL,
-        temp6 REAL, pow6 REAL
-    )
-    """)
+# Influx config
+INFLUX_URL = "http://localhost:8086"
+INFLUX_TOKEN = os.getenv("INFLUXDB_TOKEN")
+INFLUX_ORG = os.getenv("INFLUXDB_ORG")
+INFLUX_BUCKET = os.getenv("INFLUXDB_BUCKET")
 
-    conn.commit()
-    return conn
+influx_client = InfluxDBClient(
+    url=INFLUX_URL,
+    token=INFLUX_TOKEN,
+    org=INFLUX_ORG
+)
+
+write_api = influx_client.write_api()
+
+def add_point(points, drawer_id, temp, power, timestamp):
+    if temp is not None and power is not None:
+        points.append(
+            Point("Cassetto")
+            .tag("id", str(drawer_id))
+            .field("temp", float(temp))
+            .field("power", float(power))
+            .time(timestamp)
+        )
 
 def insert_data(conn, timestamp, elapsed, vv, t1, p1, t2, p2, t3, p3, t4, p4, t5, p5, t6, p6):
     cursor = conn.cursor()
@@ -44,7 +47,7 @@ def insert_data(conn, timestamp, elapsed, vv, t1, p1, t2, p2, t3, p3, t4, p4, t5
 load_dotenv()
 IP_ADDRESS = "192.168.151.101"
 BASE_URL = f"https://{IP_ADDRESS}/api/get/data"
-#the key does not automatically change; 
+#the key does not automatically change;
 # rather, the user account configuration (which is part of the project) can be overwritten during a program download, which may render the existing API key invalid.
 # If the new project preserves the same user accounts and the administrator does not manually delete the key, the same API key will continue to work.
 APIKEY = os.getenv("EASYSOFT_API_KEY")
@@ -91,7 +94,7 @@ def check_connection(base_url, headers):
     except Exception as e:
         print(f"❌ Errore: {e}")
         return False
-    
+
 DURATION_OF_MEASUREMENT = 25 * 60  # 25 minutes in seconds
 
 sleep_interval = 8
@@ -159,8 +162,6 @@ with open(file_name, mode='w', newline='') as file:
 
 print(f"CSV file created: {file_name}")
 
-
-
 # Start the measurement loop using dynamic sleep intervals
 while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
     current_datetime = datetime.now()
@@ -168,7 +169,7 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
     elapsed_seconds = int((current_datetime - start_time).total_seconds())
     headers = {'Authorization': f"Bearer {APIKEY}"}
     if not check_connection(BASE_URL, headers):
-        print("⛔ Blocco esecuzione: controlla PLC/API key")
+        print(" Blocco esecuzione: controlla PLC/API key")
         sys.exit(1)
     try:
         print("\nAPI Request:", URL)
@@ -230,23 +231,32 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
         print(f"Temp cassetto 4: {temp_cassetto_4}, Power cassetto 4: {pow_cassetto_4}")
         print(f"Temp cassetto 5: {temp_cassetto_5}, Power cassetto 5: {pow_cassetto_5}")
         print(f"Temp cassetto 6: {temp_cassetto_6}, Power cassetto 6: {pow_cassetto_6}")
+        
+        points = []
 
-        insert_data(
-            conn,
-            current_time_str,
-            elapsed_seconds,
-            valore_vuoto_macchina,
-            temp_cassetto_1, pow_cassetto_1,
-            temp_cassetto_2, pow_cassetto_2,
-            temp_cassetto_3, pow_cassetto_3,
-            temp_cassetto_4, pow_cassetto_4,
-            temp_cassetto_5, pow_cassetto_5,
-            temp_cassetto_6, pow_cassetto_6
-        )
-        if elapsed_seconds % 30 == 0:
-            conn.commit()
-        print(f"{current_time_str} -> Data inserted into SQL database successfully")
+        add_point(points, 1, temp_cassetto_1, pow_cassetto_1, current_datetime)
+        add_point(points, 2, temp_cassetto_2, pow_cassetto_2, current_datetime)
+        add_point(points, 3, temp_cassetto_3, pow_cassetto_3, current_datetime)
+        add_point(points, 4, temp_cassetto_4, pow_cassetto_4, current_datetime)
+        add_point(points, 5, temp_cassetto_5, pow_cassetto_5, current_datetime)
+        add_point(points, 6, temp_cassetto_6, pow_cassetto_6, current_datetime)
 
+        if valore_vuoto_macchina is not None:
+            points.append(
+                Point("Macchina")
+                .field("vuoto", float(valore_vuoto_macchina))
+                .time(current_datetime)
+            )
+        
+        if points:
+            write_api.write(
+                bucket=INFLUX_BUCKET,
+                org=INFLUX_ORG,
+                record=points
+            )
+            print("→ Written to InfluxDB")
+        else:
+            print("⚠️ No valid data to write")
 
         with open(file_name, mode='a', newline='') as file:
             writer = csv.writer(file)
@@ -264,5 +274,5 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
     time.sleep(sleep_interval)
 
 print("Measurement complete! ")
-conn.commit()
-conn.close()
+write_api.close()
+influx_client.close()
