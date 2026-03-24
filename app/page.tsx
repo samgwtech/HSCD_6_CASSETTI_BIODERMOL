@@ -73,7 +73,7 @@ const startTraining = async () => {
   try {
     await fetch("/api/python/training", { method: "POST" });
     setIsRunning(true);
-    setMode("training"); // ← ADD THIS
+    setMode("training");
   } catch (e) {
     console.error("Failed to start training", e);
   }
@@ -125,7 +125,6 @@ const startTraining = async () => {
       const res = await fetch("/api/csv", { cache: "no-store" });
       if (!res.ok) throw new Error(`CSV API failed: ${res.status}`);
       const data = (await res.json()) as CsvApiResponse;
-
       const cols = data.columns;
 
       // TIMESTAMP, MILLIBAR MACCHINA, TEMPERATURA CASSETTO 1, POTENZA CASSETTO 1, TEMPERATURA CASSETTO 2, POTENZA CASSETTO 2, TEMPERATURA CASSETTO 3, POTENZA CASSETTO 3,TEMPERATURA CASSETTO 4, POTENZA CASSETTO 4, TEMPERATURA CASSETTO 5, POTENZA CASSETTO 5, TEMPERATURA CASSETTO 6, POTENZA CASSETTO 6
