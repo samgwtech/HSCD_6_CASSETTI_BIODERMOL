@@ -3,10 +3,44 @@ import csv
 import time
 from datetime import datetime
 import sys
+import sqlite3
 
 from dotenv import load_dotenv
 import os
 
+def init_db():
+    conn = sqlite3.connect("machine_data.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS measurements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        elapsed_seconds INTEGER,
+        valore_vuoto_macchina REAL,
+        temp1 REAL, pow1 REAL,
+        temp2 REAL, pow2 REAL,
+        temp3 REAL, pow3 REAL,
+        temp4 REAL, pow4 REAL,
+        temp5 REAL, pow5 REAL,
+        temp6 REAL, pow6 REAL
+    )
+    """)
+
+    conn.commit()
+    return conn
+
+def insert_data(conn, timestamp, elapsed, vv, t1, p1, t2, p2, t3, p3, t4, p4, t5, p5, t6, p6):
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    INSERT INTO measurements (
+        timestamp, elapsed_seconds, valore_vuoto_macchina,
+        temp1, pow1, temp2, pow2, temp3, pow3,
+        temp4, pow4, temp5, pow5, temp6, pow6
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (timestamp, elapsed, vv, t1, p1, t2, p2, t3, p3, t4, p4, t5, p5, t6, p6))
 load_dotenv()
 IP_ADDRESS = "192.168.151.101"
 BASE_URL = f"https://{IP_ADDRESS}/api/get/data"
@@ -16,6 +50,8 @@ BASE_URL = f"https://{IP_ADDRESS}/api/get/data"
 APIKEY = os.getenv("EASYSOFT_API_KEY")
 if not APIKEY:
     raise ValueError("API key non trovata. Controlla il file .env")
+
+conn = init_db()
 
 def check_connection(base_url, headers):
     test_url = f"{base_url}?elm=M(1)"
@@ -118,9 +154,12 @@ file_name = "csv/MONITORING.csv"
 with open(file_name, mode='w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow([
-        "TIMESTAMP", "MILLIBAR MACCHINA", "TEMPERATURA CASSETTO 1", "POTENZA CASSETTO 1", "TEMPERATURA CASSETTO 2", "POTENZA CASSETTO 2", "TEMPERATURA CASSETTO 3", "POTENZA CASSETTO 3", "TEMPERATURA CASSETTO 4", "POTENZA CASSETTO 4", "TEMPERATURA CASSETTO 5", "POTENZA CASSETTO 5", "TEMPERATURA CASSETTO 6", "POTENZA CASSETTO 6"])
+        "TIMESTAMP", "MILLIBAR MACCHINA", "TEMPERATURA CASSETTO 1", "POTENZA CASSETTO 1", "TEMPERATURA CASSETTO 2", "POTENZA CASSETTO 2", "TEMPERATURA CASSETTO 3", "POTENZA CASSETTO 3", "TEMPERATURA CASSETTO 4", "POTENZA CASSETTO 4", "TEMPERATURA CASSETTO 5", "POTENZA CASSETTO 5", "TEMPERATURA CASSETTO 6", "POTENZA CASSETTO 6"
+        ])
 
 print(f"CSV file created: {file_name}")
+
+
 
 # Start the measurement loop using dynamic sleep intervals
 while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
@@ -192,6 +231,23 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
         print(f"Temp cassetto 5: {temp_cassetto_5}, Power cassetto 5: {pow_cassetto_5}")
         print(f"Temp cassetto 6: {temp_cassetto_6}, Power cassetto 6: {pow_cassetto_6}")
 
+        insert_data(
+            conn,
+            current_time_str,
+            elapsed_seconds,
+            valore_vuoto_macchina,
+            temp_cassetto_1, pow_cassetto_1,
+            temp_cassetto_2, pow_cassetto_2,
+            temp_cassetto_3, pow_cassetto_3,
+            temp_cassetto_4, pow_cassetto_4,
+            temp_cassetto_5, pow_cassetto_5,
+            temp_cassetto_6, pow_cassetto_6
+        )
+        if elapsed_seconds % 30 == 0:
+            conn.commit()
+        print(f"{current_time_str} -> Data inserted into SQL database successfully")
+
+
         with open(file_name, mode='a', newline='') as file:
             writer = csv.writer(file)
 #      index:0 lapsed_seconds, index:1 current_time_str, index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
@@ -208,3 +264,5 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
     time.sleep(sleep_interval)
 
 print("Measurement complete! ")
+conn.commit()
+conn.close()
