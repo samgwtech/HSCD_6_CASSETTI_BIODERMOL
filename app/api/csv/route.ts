@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
+import { getStatus } from "@/lib/pythonRunner";
 
 function parseCsvToColumns(csv: string): (number | string)[][] {
   const rows = csv
@@ -25,8 +26,26 @@ function parseCsvToColumns(csv: string): (number | string)[][] {
 
 // This is a simple API route that reads the CSV file and returns its contents as JSON.
 export async function GET() {
-  const filePath = path.join(process.cwd(), "csv", "MONITORING.csv");
-  const csv = await fs.readFile(filePath, "utf8");
-  const columns = parseCsvToColumns(csv);
-  return NextResponse.json({ columns });
+  const { mode } = getStatus();
+let filePath: string;
+
+  if (mode === "real") {
+    filePath = path.join(process.cwd(), "csv", "MONITORING.csv");
+  } else if (mode === "training") {
+    filePath = path.join(process.cwd(), "csv", "csv_data.csv");
+  } else {
+    // fallback (nothing running)
+    return NextResponse.json({ columns: [] });
+  }
+
+  console.log("Reading CSV from:", filePath);
+
+  try {
+    const csv = await fs.readFile(filePath, "utf8");
+    const columns = parseCsvToColumns(csv);
+    return NextResponse.json({ columns });
+  } catch (e) {
+    console.error("CSV read error:", e);
+    return NextResponse.json({ columns: [] });
+  }
 }
