@@ -25,12 +25,12 @@ TEMP_2_1 = 15
 TEMP_2_2 = 16
 TEMP_2_3 = 17
 
-# POW_1_1 = 
-# POW_1_2 = 
-# POW_1_3 = 
-# POW_2_1 = 
-# POW_2_2 = 
-# POW_2_2 = 
+POW_1_1 = 0
+POW_1_2 = 0
+POW_1_3 = 0
+POW_2_1 = 0
+POW_2_2 = 0
+POW_2_2 = 0
 
 MW_VALORE_VUOTO_MACCHINA = 10
 MW_POWER_DRAWER_1 = 0
@@ -47,22 +47,16 @@ MW_POWER_DRAWER_6 = 0
 MW_TEMP_DRAWER_6 = TEMP_2_3
 
 # Build URL with '+' as separator
-#+MW({MW_POWER_DRAWER_1}
-#+MW({MW_POWER_DRAWER_2}
-#+MW({MW_POWER_DRAWER_3}
-#+MW({MW_POWER_DRAWER_4}
-#+MW({MW_POWER_DRAWER_5}
-#+MW({MW_POWER_DRAWER_6}
 URL = (
     f"https://192.168.151.101/api/get/data?elm="
     f"M({M_START})+"
     f"MW({MW_VALORE_VUOTO_MACCHINA})+"
-    f"MW({MW_TEMP_DRAWER_1})+"
-    f"MW({MW_TEMP_DRAWER_2})+"
-    f"MW({MW_TEMP_DRAWER_3})+"
-    f"MW({MW_TEMP_DRAWER_4})+"
-    f"MW({MW_TEMP_DRAWER_5})+"
-    f"MW({MW_TEMP_DRAWER_6})"
+    f"MW({MW_TEMP_DRAWER_1})+MW({MW_POWER_DRAWER_1}"
+    f"MW({MW_TEMP_DRAWER_2})+MW({MW_POWER_DRAWER_2}"
+    f"MW({MW_TEMP_DRAWER_3})+MW({MW_POWER_DRAWER_3}"
+    f"MW({MW_TEMP_DRAWER_4})+MW({MW_POWER_DRAWER_4}"
+    f"MW({MW_TEMP_DRAWER_5})+MW({MW_POWER_DRAWER_5}"
+    f"MW({MW_TEMP_DRAWER_6})+MW({MW_POWER_DRAWER_6}"
 )
 
 # Create CSV file with current date/time in the name
@@ -76,7 +70,7 @@ with open(file_name, mode='w', newline='') as file:
     writer.writerow([
         "TIMESTAMP", "MILLIBAR MACCHINA", "TEMPERATURA CASSETTO 1", "POTENZA CASSETTO 1", "TEMPERATURA CASSETTO 2", "POTENZA CASSETTO 2", "TEMPERATURA CASSETTO 3", "POTENZA CASSETTO 3", "TEMPERATURA CASSETTO 4", "POTENZA CASSETTO 4", "TEMPERATURA CASSETTO 5", "POTENZA CASSETTO 5", "TEMPERATURA CASSETTO 6", "POTENZA CASSETTO 6"])
 
-print(f"CSV file created: {file_name} 🚀")
+print(f"CSV file created: {file_name}")
 
 # Start the measurement loop using dynamic sleep intervals
 while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
@@ -151,7 +145,7 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
                 writer.writerow([
                     elapsed_seconds, current_time_str, valore_vuoto_macchina, temp_cassetto_1, pow_cassetto_1, temp_cassetto_2, pow_cassetto_2, temp_cassetto_3, pow_cassetto_3, temp_cassetto_4, pow_cassetto_4, temp_cassetto_5, pow_cassetto_5, temp_cassetto_6, pow_cassetto_6
                 ])
-            print(f"{current_time_str} -> Data logged successfully ✅")
+            print(f"{current_time_str} -> Data logged successfully ")
 
     except Exception as e:
         print(f"{current_time_str} -> Request failed: {e}")
@@ -159,4 +153,4 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
 
     time.sleep(sleep_interval)
 
-print("Measurement complete! 📊")
+print("Measurement complete! ")

@@ -92,27 +92,27 @@ const startTraining = async () => {
   // CASSETTI SET FUNCTIONS (6 CASSETTI)
   // Cassetto 1
   const [temp1Data, setTemp1Data] = useState<number[]>([]);
-  // const [mwPower1Data, setMwPower1Data] = useState<number[]>([]);
+  const [mwPower1Data, setMwPower1Data] = useState<number[]>([]);
 
   // Cassetto 2
   const [temp2Data, setTemp2Data] = useState<number[]>([]);
-  // const [mwPower2Data, setMwPower2Data] = useState<number[]>([]);
+  const [mwPower2Data, setMwPower2Data] = useState<number[]>([]);
 
     // Cassetto 3
   const [temp3Data, setTemp3Data] = useState<number[]>([]);
-  //const [mwPower3Data, setMwPower3Data] = useState<number[]>([]);
+  const [mwPower3Data, setMwPower3Data] = useState<number[]>([]);
 
   // Cassetto 4
   const [temp4Data, setTemp4Data] = useState<number[]>([]);
-  // const [mwPower4Data, setMwPower4Data] = useState<number[]>([]);
+  const [mwPower4Data, setMwPower4Data] = useState<number[]>([]);
 
     // Cassetto 5
   const [temp5Data, setTemp5Data] = useState<number[]>([]);
-  // const [mwPower5Data, setMwPower5Data] = useState<number[]>([]);
+  const [mwPower5Data, setMwPower5Data] = useState<number[]>([]);
 
   // Cassetto 6
   const [temp6Data, setTemp6Data] = useState<number[]>([]);
-  // const [mwPower6Data, setMwPower6Data] = useState<number[]>([]);
+  const [mwPower6Data, setMwPower6Data] = useState<number[]>([]);
 
 
     //<div>
@@ -136,43 +136,43 @@ const startTraining = async () => {
       const pCol = (cols[2] ?? []).map((v) => (num(v) * (33/930)));
 
       const t1Col = (cols[3] ?? []).map((v) => (num(v) * (28/188)));
-      //const mwPower1Col = (cols[3] ?? []).map((v) => (num(v) / 4095) * 100);
+      const mwPower1Col = (cols[4] ?? []).map((v) => (num(v) / 4095) * 100);
 
       const t2Col = (cols[5] ?? []).map((v) =>  (num(v) * (28/188)));
-      //const mwPower2Col = (cols[5] ?? []).map((v) => (num(v) / 4095) * 100);
+      const mwPower2Col = (cols[6] ?? []).map((v) => (num(v) / 4095) * 100);
 
       const t3Col = (cols[7] ?? []).map((v) => (num(v) * (28/188)));
-      //const mwPower3Col = (cols[7] ?? []).map((v) => (num(v) / 4095) * 100);
+      const mwPower3Col = (cols[8] ?? []).map((v) => (num(v) / 4095) * 100);
 
       const t4Col = (cols[9] ?? []).map((v) => (num(v) * (28/188)));
-      // const mwPower4Col = (cols[9] ?? []).map((v) => (num(v) / 4095) * 100);
+       const mwPower4Col = (cols[10] ?? []).map((v) => (num(v) / 4095) * 100);
 
       const t5Col = (cols[11] ?? []).map((v) => (num(v) * (28/188)));
-      // const mwPower5Col = (cols[11] ?? []).map((v) => (num(v) / 4095) * 100);
+       const mwPower5Col = (cols[12] ?? []).map((v) => (num(v) / 4095) * 100);
 
       const t6Col = (cols[13] ?? []).map((v) => (num(v) * (28/188)));
-      // const mwPower6Col = (cols[13] ?? []).map((v) => (num(v) / 4095) * 100);
+      const mwPower6Col = (cols[14] ?? []).map((v) => (num(v) / 4095) * 100);
 
       setTimeLabels(secCol.map(toTimeLabel));
 
       setPressureData(pCol);
       setTemp1Data(t1Col);
-      //setMwPower1Data(mwPower1Col);
+      setMwPower1Data(mwPower1Col);
 
       setTemp2Data(t2Col);
-      //setMwPower2Data(mwPower2Col);
+      setMwPower2Data(mwPower2Col);
 
       setTemp3Data(t3Col);
-      //setMwPower3Data(mwPower3Col);
+      setMwPower3Data(mwPower3Col);
 
       setTemp4Data(t4Col);
-      //setMwPower4Data(mwPower4Col);
+      setMwPower4Data(mwPower4Col);
 
       setTemp5Data(t5Col);
-      //setMwPower5Data(mwPower5Col);
+      setMwPower5Data(mwPower5Col);
 
       setTemp6Data(t6Col);
-      //setMwPower6Data(mwPower6Col);
+      setMwPower6Data(mwPower6Col);
 
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown fetch error";
@@ -205,19 +205,19 @@ useEffect(() => {
   const charts = useMemo(
     () => [
       { name: "", max: 600, unit: "Temp Cassetto 1 (°C)", data: temp1Data, color: "rgba(150, 70, 54, 0.5)" },
-      //{ name: "", max: 100, unit: "MW Power Cassetto 1 (%)", data: mwPower1Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 100, unit: "MW Power Cassetto 1 (%)", data: mwPower1Data, color: "rgba(98,131,149,0.5)" },
       { name: "", max: 600, unit: "Temp Cassetto 2 (°C)", data: temp2Data, color: "rgba(150, 70, 54, 0.5)" },
-      //{ name: "", max: 100, unit: "MW Power Cassetto 2 (%)", data: mwPower2Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 100, unit: "MW Power Cassetto 2 (%)", data: mwPower2Data, color: "rgba(98,131,149,0.5)" },
       { name: "", max: 600, unit: "Temp Cassetto 3 (°C)", data: temp3Data, color: "rgba(150, 70, 54, 0.5)" },
-      //{ name: "", max: 100, unit: "MW Power Cassetto 3 (%)", data: mwPower3Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 100, unit: "MW Power Cassetto 3 (%)", data: mwPower3Data, color: "rgba(98,131,149,0.5)" },
       { name: "", max: 600, unit: "Temp Cassetto 4 (°C)", data: temp4Data, color: "rgba(150, 70, 54, 0.5)" },
-      //{ name: "", max: 100, unit: "MW Power Cassetto 4 (%)", data: mwPower4Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 100, unit: "MW Power Cassetto 4 (%)", data: mwPower4Data, color: "rgba(98,131,149,0.5)" },
       { name: "", max: 600, unit: "Temp Cassetto 5 (°C)", data: temp5Data, color: "rgba(150, 70, 54, 0.5)" },
-      //{ name: "", max: 100, unit: "MW Power Cassetto 5 (%)", data: mwPower5Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 100, unit: "MW Power Cassetto 5 (%)", data: mwPower5Data, color: "rgba(98,131,149,0.5)" },
       { name: "", max: 600, unit: "Temp Cassetto 6 (°C)", data: temp6Data, color: "rgba(150, 70, 54, 0.5)" },
-      //{ name: "", max: 100, unit: "MW Power Cassetto 6 (%)", data: mwPower6Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 100, unit: "MW Power Cassetto 6 (%)", data: mwPower6Data, color: "rgba(98,131,149,0.5)" },
     ],
-    [temp1Data, temp2Data, temp3Data, , temp4Data, , temp5Data, , temp6Data]
+    [temp1Data, mwPower1Data, temp2Data, mwPower2Data, temp3Data,mwPower3Data, temp4Data, mwPower4Data, temp5Data, mwPower5Data, temp6Data, mwPower6Data]
   );
 
   // Keyboard + wheel nav in SINGLE view
