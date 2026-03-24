@@ -4,22 +4,6 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import DashboardLayout from "@/components/ui/DashboardLayout";
 import ChartComponent from "@/components/ui/ChartComponent";
 
-const startMeasurement = async () => {
-  try {
-    await fetch("/api/python/start", { method: "POST" });
-  } catch (e) {
-    console.error("Failed to start", e);
-  }
-};
-
-const stopMeasurement = async () => {
-  try {
-    await fetch("/api/python/stop", { method: "POST" });
-  } catch (e) {
-    console.error("Failed to stop", e);
-  }
-};
-
 type CsvApiResponse = {
   // columns: array of columns, each column is an array of numbers/strings
   columns: (number | string)[][];
@@ -52,6 +36,48 @@ function avg(arr: number[]) {
 
 export default function Home() {
   const [isRunning, setIsRunning] = useState(false);
+  const [mode, setMode] = useState<"real" | "training" | null>(null);
+  const fetchStatus = useCallback(async () => {
+    try {
+        const res = await fetch("/api/python/status", { cache: "no-store" });
+        const data = await res.json();
+
+        setIsRunning(data.running);
+        setMode(data.mode);
+      } catch (e) {
+        console.error("Failed to fetch status", e);
+      }
+    }, []);
+
+const startMeasurement = async () => {
+  try {
+    await fetch("/api/python/start", { method: "POST" });
+    setIsRunning(true);
+    setMode("real");
+  } catch (e) {
+    console.error("Failed to start", e);
+  }
+};
+
+const stopMeasurement = async () => {
+  try {
+    await fetch("/api/python/stop", { method: "POST" });
+    setIsRunning(false);
+    setMode(null);
+  } catch (e) {
+    console.error("Failed to stop", e);
+  }
+};
+
+const startTraining = async () => {
+  try {
+    await fetch("/api/python/training", { method: "POST" });
+    setIsRunning(true);
+    setMode("training"); // ← ADD THIS
+  } catch (e) {
+    console.error("Failed to start training", e);
+  }
+};
   const [hoverIndex, setHoverIndex] = useState<number>(-1);
   const [viewMode] = useState<ViewMode>("grid");
   const [activeChart, setActiveChart] = useState<number>(0);
@@ -162,6 +188,13 @@ export default function Home() {
     fetchCsv();
   }, [fetchCsv]);
 
+  useEffect(() => {
+  fetchStatus();
+
+  const id = setInterval(fetchStatus, 2000);
+  return () => clearInterval(id);
+}, [fetchStatus]);
+
   // If you want “near real time” without SSE/WebSocket, uncomment this polling:
   // SET REFRESH TIME CSV
 useEffect(() => {
@@ -245,7 +278,15 @@ useEffect(() => {
         <div className="space-y-2 text-sm text-gray-400 pl-4 pt-4">
         <div className="pt-4 space-y-2">
           <div>
-  Mode: {isRunning ? "Running" : "Stopped"}
+        Mode: {
+          !isRunning
+            ? "Stopped"
+            : mode === "training"
+            ? "Training"
+            : mode === "real"
+            ? "Real"
+            : "Unknown"
+        }
 </div>
   <button
     onClick={startMeasurement}
@@ -260,11 +301,8 @@ useEffect(() => {
         Stop Measurement
       </button>
     </div>
-    <button
-  onClick={async () => {
-    await fetch("/api/python/training", { method: "POST" });
-    setIsRunning(true);
-  }}
+<button
+  onClick={startTraining}
   className="bg-blue-600 px-3 py-1 rounded text-white"
 >
   Training Mode
