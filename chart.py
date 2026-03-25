@@ -3,9 +3,6 @@ import csv
 import time
 from datetime import datetime
 
-# Set your constants
-# CAREFUL: API KEY KEEPS CHANGING, PROBABLY FOR SECURITY REASONS
-# TODO: check if API key could be set permanently
 APIKEY = "44063c606ae224326747c8d41969ce696a04999d6860477438c242f31c841a80c3b54ffe65dec0ce"
 DURATION_OF_MEASUREMENT = 25 * 60  # 25 minutes in seconds
 
@@ -50,11 +47,11 @@ MW_TEMP_DRAWER_6 = TEMP_2_3
 URL = (
     f"https://192.168.151.102/api/get/data?elm="
     f"MW({MW_VALORE_VUOTO_MACCHINA})+"
-    f"MW({MW_TEMP_DRAWER_1})+MW({MW_POWER_DRAWER_1}"
-    f"MW({MW_TEMP_DRAWER_2})+MW({MW_POWER_DRAWER_2}"
-    f"MW({MW_TEMP_DRAWER_3})+MW({MW_POWER_DRAWER_3}"
-    f"MW({MW_TEMP_DRAWER_4})+MW({MW_POWER_DRAWER_4}"
-    f"MW({MW_TEMP_DRAWER_5})+MW({MW_POWER_DRAWER_5}"
+    f"MW({MW_TEMP_DRAWER_1})+MW({MW_POWER_DRAWER_1}+"
+    f"MW({MW_TEMP_DRAWER_2})+MW({MW_POWER_DRAWER_2}+"
+    f"MW({MW_TEMP_DRAWER_3})+MW({MW_POWER_DRAWER_3}+"
+    f"MW({MW_TEMP_DRAWER_4})+MW({MW_POWER_DRAWER_4}+"
+    f"MW({MW_TEMP_DRAWER_5})+MW({MW_POWER_DRAWER_5}+"
     f"MW({MW_TEMP_DRAWER_6})+MW({MW_POWER_DRAWER_6}"
 )
 
@@ -79,6 +76,8 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
     headers = {'Authorization': f"Bearer {APIKEY}"}
 
     try:
+        print("\nSET REQUEST")
+        requests.get("https://192.168.151.102/api/set/data?elm=M(232)=1",verify=False)
         print("\nAPI Request:", URL)
         response = requests.get(URL, headers=headers, verify=False)
 

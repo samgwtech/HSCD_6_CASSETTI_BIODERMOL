@@ -73,7 +73,7 @@ const startTraining = async () => {
   try {
     await fetch("/api/python/training", { method: "POST" });
     setIsRunning(true);
-    setMode("training"); // ← ADD THIS
+    setMode("training");
   } catch (e) {
     console.error("Failed to start training", e);
   }
@@ -129,15 +129,15 @@ const startTraining = async () => {
       const cols = data.columns;
 
       // TIMESTAMP, MILLIBAR MACCHINA, TEMPERATURA CASSETTO 1, POTENZA CASSETTO 1, TEMPERATURA CASSETTO 2, POTENZA CASSETTO 2, TEMPERATURA CASSETTO 3, POTENZA CASSETTO 3,TEMPERATURA CASSETTO 4, POTENZA CASSETTO 4, TEMPERATURA CASSETTO 5, POTENZA CASSETTO 5, TEMPERATURA CASSETTO 6, POTENZA CASSETTO 6
-      //      index:0 lapsed_seconds, index:1 current_time_str, index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
-
+      //index:0 lapsed_seconds, index:1 current_time_str, index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
       const secCol = (cols[0] ?? []).map((v) => num(v));
-
+      //index:1 current_time_str, index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
       const pCol = (cols[2] ?? []).map((v) => (num(v)));
-
+      //index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
       const t1Col = (cols[3] ?? []).map((v) => (num(v)/10));
+      //index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
       const mwPower1Col = (cols[4] ?? []).map((v) => (num(v)));
-
+      //index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
       const t2Col = (cols[5] ?? []).map((v) =>  (num(v)/10));
       const mwPower2Col = (cols[6] ?? []).map((v) => (num(v)));
 
