@@ -133,25 +133,25 @@ const startTraining = async () => {
 
       const secCol = (cols[0] ?? []).map((v) => num(v));
 
-      const pCol = (cols[2] ?? []).map((v) => (num(v) * (33/930)));
+      const pCol = (cols[2] ?? []).map((v) => (num(v)));
 
-      const t1Col = (cols[3] ?? []).map((v) => (num(v) * (28/188)));
-      const mwPower1Col = (cols[4] ?? []).map((v) => (num(v) / 4095) * 100);
+      const t1Col = (cols[3] ?? []).map((v) => (num(v)/10));
+      const mwPower1Col = (cols[4] ?? []).map((v) => (num(v)));
 
-      const t2Col = (cols[5] ?? []).map((v) =>  (num(v) * (28/188)));
-      const mwPower2Col = (cols[6] ?? []).map((v) => (num(v) / 4095) * 100);
+      const t2Col = (cols[5] ?? []).map((v) =>  (num(v)/10));
+      const mwPower2Col = (cols[6] ?? []).map((v) => (num(v)));
 
-      const t3Col = (cols[7] ?? []).map((v) => (num(v) * (28/188)));
-      const mwPower3Col = (cols[8] ?? []).map((v) => (num(v) / 4095) * 100);
+      const t3Col = (cols[7] ?? []).map((v) => (num(v)/10));
+      const mwPower3Col = (cols[8] ?? []).map((v) => (num(v)));
 
-      const t4Col = (cols[9] ?? []).map((v) => (num(v) * (28/188)));
-       const mwPower4Col = (cols[10] ?? []).map((v) => (num(v) / 4095) * 100);
+      const t4Col = (cols[9] ?? []).map((v) => (num(v)/10));
+      const mwPower4Col = (cols[10] ?? []).map((v) => (num(v)));
 
-      const t5Col = (cols[11] ?? []).map((v) => (num(v) * (28/188)));
-       const mwPower5Col = (cols[12] ?? []).map((v) => (num(v) / 4095) * 100);
+      const t5Col = (cols[11] ?? []).map((v) => (num(v)/10));
+      const mwPower5Col = (cols[12] ?? []).map((v) => (num(v)));
 
-      const t6Col = (cols[13] ?? []).map((v) => (num(v) * (28/188)));
-      const mwPower6Col = (cols[14] ?? []).map((v) => (num(v) / 4095) * 100);
+      const t6Col = (cols[13] ?? []).map((v) => (num(v)/10));
+      const mwPower6Col = (cols[14] ?? []).map((v) => (num(v)));
 
       setTimeLabels(secCol.map(toTimeLabel));
 
@@ -204,17 +204,17 @@ useEffect(() => {
 
   const charts = useMemo(
     () => [
-      { name: "", max: 600, unit: "Temp Cassetto 1 (°C)", data: temp1Data, color: "rgba(150, 70, 54, 0.5)" },
+      { name: "", max: 100, unit: "Temp Cassetto 1 (°C)", data: temp1Data, color: "rgba(150, 70, 54, 0.5)" },
       { name: "", max: 100, unit: "MW Power Cassetto 1 (%)", data: mwPower1Data, color: "rgba(98,131,149,0.5)" },
-      { name: "", max: 600, unit: "Temp Cassetto 2 (°C)", data: temp2Data, color: "rgba(150, 70, 54, 0.5)" },
+      { name: "", max: 100, unit: "Temp Cassetto 2 (°C)", data: temp2Data, color: "rgba(150, 70, 54, 0.5)" },
       { name: "", max: 100, unit: "MW Power Cassetto 2 (%)", data: mwPower2Data, color: "rgba(98,131,149,0.5)" },
-      { name: "", max: 600, unit: "Temp Cassetto 3 (°C)", data: temp3Data, color: "rgba(150, 70, 54, 0.5)" },
+      { name: "", max: 100, unit: "Temp Cassetto 3 (°C)", data: temp3Data, color: "rgba(150, 70, 54, 0.5)" },
       { name: "", max: 100, unit: "MW Power Cassetto 3 (%)", data: mwPower3Data, color: "rgba(98,131,149,0.5)" },
-      { name: "", max: 600, unit: "Temp Cassetto 4 (°C)", data: temp4Data, color: "rgba(150, 70, 54, 0.5)" },
+      { name: "", max: 100, unit: "Temp Cassetto 4 (°C)", data: temp4Data, color: "rgba(150, 70, 54, 0.5)" },
       { name: "", max: 100, unit: "MW Power Cassetto 4 (%)", data: mwPower4Data, color: "rgba(98,131,149,0.5)" },
-      { name: "", max: 600, unit: "Temp Cassetto 5 (°C)", data: temp5Data, color: "rgba(150, 70, 54, 0.5)" },
+      { name: "", max: 100, unit: "Temp Cassetto 5 (°C)", data: temp5Data, color: "rgba(150, 70, 54, 0.5)" },
       { name: "", max: 100, unit: "MW Power Cassetto 5 (%)", data: mwPower5Data, color: "rgba(98,131,149,0.5)" },
-      { name: "", max: 600, unit: "Temp Cassetto 6 (°C)", data: temp6Data, color: "rgba(150, 70, 54, 0.5)" },
+      { name: "", max: 100, unit: "Temp Cassetto 6 (°C)", data: temp6Data, color: "rgba(150, 70, 54, 0.5)" },
       { name: "", max: 100, unit: "MW Power Cassetto 6 (%)", data: mwPower6Data, color: "rgba(98,131,149,0.5)" },
     ],
     [temp1Data, mwPower1Data, temp2Data, mwPower2Data, temp3Data,mwPower3Data, temp4Data, mwPower4Data, temp5Data, mwPower5Data, temp6Data, mwPower6Data]
