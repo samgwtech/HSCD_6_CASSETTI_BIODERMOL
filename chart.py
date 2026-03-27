@@ -3,6 +3,11 @@ import csv
 import time
 from datetime import datetime
 
+IP_SEVIO = "10.139.216.102"
+IP_PLC = "192.168.151.102"
+
+IP_TO_BE_USED = IP_SEVIO
+
 APIKEY = "44063c606ae224326747c8d41969ce696a04999d6860477438c242f31c841a80c3b54ffe65dec0ce"
 DURATION_OF_MEASUREMENT = 25 * 60  # 25 minutes in seconds
 
@@ -43,9 +48,10 @@ MW_TEMP_DRAWER_5 = TEMP_2_2
 MW_POWER_DRAWER_6 = POW_2_3
 MW_TEMP_DRAWER_6 = TEMP_2_3
 
+#f"https://192.168.151.102/api/get/data?elm="
 # Build URL with '+' as separator
-URL = (
-    f"https://192.168.151.102/api/get/data?elm="
+GET_REQUEST_URL = (
+    f"https://{IP_TO_BE_USED}/api/get/data?elm="
     f"MW({MW_VALORE_VUOTO_MACCHINA})+"
     f"MW({MW_TEMP_DRAWER_1})+MW({MW_POWER_DRAWER_1}+"
     f"MW({MW_TEMP_DRAWER_2})+MW({MW_POWER_DRAWER_2}+"
@@ -76,11 +82,12 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
     headers = {'Authorization': f"Bearer {APIKEY}"}
 
     try:
-        print("\nSET REQUEST")
-        requests.get("https://192.168.151.102/api/set/data?elm=M(232)=1",verify=False)
-        print("\nAPI Request:", URL)
-        response = requests.get(URL, headers=headers, verify=False)
-
+        ##print("\nSET REQUEST")
+        ##SET_REQUEST_URL = (
+        ##    f"https://{IP_TO_BE_USED}/api/set/op?op=M&index=232&val=1")
+        ##requests.get(SET_REQUEST_URL,verify=False)
+        print("\nAPI Request:", GET_REQUEST_URL)
+        response = requests.get(GET_REQUEST_URL, headers=headers, verify=False)
         if response.status_code == 200:
             data = response.json()
             # Retrieve MW measurements from MWSINGLE and M measurements from MSINGLE
@@ -138,7 +145,7 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
 
             with open(file_name, mode='a', newline='') as file:
                 writer = csv.writer(file)
-#      index:0 lapsed_seconds, index:1 current_time_str, index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
+            #      index:0 lapsed_seconds, index:1 current_time_str, index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
 
                 writer.writerow([
                     elapsed_seconds, current_time_str, valore_vuoto_macchina, temp_cassetto_1, pow_cassetto_1, temp_cassetto_2, pow_cassetto_2, temp_cassetto_3, pow_cassetto_3, temp_cassetto_4, pow_cassetto_4, temp_cassetto_5, pow_cassetto_5, temp_cassetto_6, pow_cassetto_6
