@@ -5,11 +5,11 @@ import DashboardLayout from "@/components/ui/DashboardLayout";
 import ChartComponent from "@/components/ui/ChartComponent";
 
 type CsvApiResponse = {
-  // columns: array of columns, each column is an array of numbers/strings
   columns: (number | string)[][];
 };
 
 type ViewMode = "grid" | "single";
+type Override = { startIndex: number; value: number };
 
 function toTimeLabel(sec: number) {
   const s = Math.max(0, Math.floor(sec));
@@ -39,45 +39,45 @@ export default function Home() {
   const [mode, setMode] = useState<"real" | "training" | null>(null);
   const fetchStatus = useCallback(async () => {
     try {
-        const res = await fetch("/api/python/status", { cache: "no-store" });
-        const data = await res.json();
+      const res = await fetch("/api/python/status", { cache: "no-store" });
+      const data = await res.json();
+      setIsRunning(data.running);
+      setMode(data.mode);
+    } catch (e) {
+      console.error("Failed to fetch status", e);
+    }
+  }, []);
 
-        setIsRunning(data.running);
-        setMode(data.mode);
-      } catch (e) {
-        console.error("Failed to fetch status", e);
-      }
-    }, []);
+  const startMeasurement = async () => {
+    try {
+      await fetch("/api/python/start", { method: "POST" });
+      setIsRunning(true);
+      setMode("real");
+    } catch (e) {
+      console.error("Failed to start", e);
+    }
+  };
 
-const startMeasurement = async () => {
-  try {
-    await fetch("/api/python/start", { method: "POST" });
-    setIsRunning(true);
-    setMode("real");
-  } catch (e) {
-    console.error("Failed to start", e);
-  }
-};
+  const stopMeasurement = async () => {
+    try {
+      await fetch("/api/python/stop", { method: "POST" });
+      setIsRunning(false);
+      setMode(null);
+    } catch (e) {
+      console.error("Failed to stop", e);
+    }
+  };
 
-const stopMeasurement = async () => {
-  try {
-    await fetch("/api/python/stop", { method: "POST" });
-    setIsRunning(false);
-    setMode(null);
-  } catch (e) {
-    console.error("Failed to stop", e);
-  }
-};
+  const startTraining = async () => {
+    try {
+      await fetch("/api/python/training", { method: "POST" });
+      setIsRunning(true);
+      setMode("training");
+    } catch (e) {
+      console.error("Failed to start training", e);
+    }
+  };
 
-const startTraining = async () => {
-  try {
-    await fetch("/api/python/training", { method: "POST" });
-    setIsRunning(true);
-    setMode("training");
-  } catch (e) {
-    console.error("Failed to start training", e);
-  }
-};
   const [hoverIndex, setHoverIndex] = useState<number>(-1);
   const [viewMode] = useState<ViewMode>("grid");
   const [activeChart, setActiveChart] = useState<number>(0);
@@ -89,36 +89,92 @@ const startTraining = async () => {
   const [timeLabels, setTimeLabels] = useState<string[]>([]);
   const [pressureData, setPressureData] = useState<number[]>([]);
 
-  // CASSETTI SET FUNCTIONS (6 CASSETTI)
-  // Cassetto 1
+  // Cassetti
   const [temp1Data, setTemp1Data] = useState<number[]>([]);
-  const [mwPower1Data, setMwPower1Data] = useState<number[]>([]);
+  const [originalMwPower1Data, setOriginalMwPower1Data] = useState<number[]>([]);
+  const [overrides, setOverrides] = useState<Override[]>([]);
+  const [overrideInput, setOverrideInput] = useState<string>("");
 
-  // Cassetto 2
   const [temp2Data, setTemp2Data] = useState<number[]>([]);
   const [mwPower2Data, setMwPower2Data] = useState<number[]>([]);
 
-    // Cassetto 3
   const [temp3Data, setTemp3Data] = useState<number[]>([]);
   const [mwPower3Data, setMwPower3Data] = useState<number[]>([]);
 
-  // Cassetto 4
   const [temp4Data, setTemp4Data] = useState<number[]>([]);
   const [mwPower4Data, setMwPower4Data] = useState<number[]>([]);
 
-    // Cassetto 5
   const [temp5Data, setTemp5Data] = useState<number[]>([]);
   const [mwPower5Data, setMwPower5Data] = useState<number[]>([]);
 
-  // Cassetto 6
   const [temp6Data, setTemp6Data] = useState<number[]>([]);
   const [mwPower6Data, setMwPower6Data] = useState<number[]>([]);
 
+  // Add a new override segment at given start index with value
+  const addOverride = useCallback((startIndex: number, value: number) => {
+    setOverrides((prev) => {
+      // Remove any existing overrides that start at or after startIndex
+      const filtered = prev.filter((o) => o.startIndex < startIndex);
+      // Add the new segment
+      const newOverrides = [...filtered, { startIndex, value }];
+      // Keep them sorted by startIndex
+      newOverrides.sort((a, b) => a.startIndex - b.startIndex);
+      return newOverrides;
+    });
+  }, []);
 
-    //<div>
-    //      <strong className="text-blue-400">MW Power Cassetto 1:</strong>{" "}
-    //      {getAt(mwPower1Data, hoverIndex).toFixed(1)}%
-    //    </div>
+  // Clear all override segments
+  const clearOverrides = useCallback(() => {
+    setOverrides([]);
+  }, []);
+
+  // Compute displayed power for first cassette with layered overrides applied
+  const displayMwPower1Data = useMemo(() => {
+    if (originalMwPower1Data.length === 0) return [];
+    if (overrides.length === 0) return originalMwPower1Data;
+
+    const result = [...originalMwPower1Data];
+    // For each index, find the override with the largest startIndex <= i
+    for (let i = 0; i < result.length; i++) {
+      let applicableOverride: Override | undefined;
+      // Overrides are sorted, so we can iterate from the end
+      for (let j = overrides.length - 1; j >= 0; j--) {
+        if (overrides[j].startIndex <= i) {
+          applicableOverride = overrides[j];
+          break;
+        }
+      }
+      if (applicableOverride) {
+        result[i] = applicableOverride.value;
+      }
+    }
+    return result;
+  }, [originalMwPower1Data, overrides]);
+
+  // Handle override input changes
+  const handleOverrideChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setOverrideInput(value);
+    const numValue = parseFloat(value);
+    if (value && !isNaN(numValue) && numValue !== 0) {
+      // Determine start index: use hover index if valid, otherwise last point
+      let startIdx = hoverIndex;
+      if (startIdx === -1 && originalMwPower1Data.length > 0) {
+        startIdx = originalMwPower1Data.length - 1;
+      }
+      if (startIdx >= 0) {
+        addOverride(startIdx, numValue);
+      } else {
+        // No data yet, can't set override
+        console.warn("No data points available to override");
+        setOverrideInput("");
+      }
+    } else {
+      // Clear all overrides
+      clearOverrides();
+    }
+  };
+
   const fetchCsv = useCallback(async () => {
     setError(null);
     try {
@@ -128,36 +184,30 @@ const startTraining = async () => {
 
       const cols = data.columns;
 
-      // TIMESTAMP, MILLIBAR MACCHINA, TEMPERATURA CASSETTO 1, POTENZA CASSETTO 1, TEMPERATURA CASSETTO 2, POTENZA CASSETTO 2, TEMPERATURA CASSETTO 3, POTENZA CASSETTO 3,TEMPERATURA CASSETTO 4, POTENZA CASSETTO 4, TEMPERATURA CASSETTO 5, POTENZA CASSETTO 5, TEMPERATURA CASSETTO 6, POTENZA CASSETTO 6
-      //index:0 lapsed_seconds, index:1 current_time_str, index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
       const secCol = (cols[0] ?? []).map((v) => num(v));
-      //index:1 current_time_str, index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
-      const pCol = (cols[2] ?? []).map((v) => (num(v)));
-      //index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
-      const t1Col = (cols[3] ?? []).map((v) => (num(v)/10));
-      //index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
-      const mwPower1Col = (cols[4] ?? []).map((v) => (num(v)));
-      //index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
-      const t2Col = (cols[5] ?? []).map((v) =>  (num(v)/10));
-      const mwPower2Col = (cols[6] ?? []).map((v) => (num(v)));
+      const pCol = (cols[2] ?? []).map((v) => num(v));
+      const t1Col = (cols[3] ?? []).map((v) => num(v) / 10);
+      const mwPower1Col = (cols[4] ?? []).map((v) => num(v));
 
-      const t3Col = (cols[7] ?? []).map((v) => (num(v)/10));
-      const mwPower3Col = (cols[8] ?? []).map((v) => (num(v)));
+      const t2Col = (cols[5] ?? []).map((v) => num(v) / 10);
+      const mwPower2Col = (cols[6] ?? []).map((v) => num(v));
 
-      const t4Col = (cols[9] ?? []).map((v) => (num(v)/10));
-      const mwPower4Col = (cols[10] ?? []).map((v) => (num(v)));
+      const t3Col = (cols[7] ?? []).map((v) => num(v) / 10);
+      const mwPower3Col = (cols[8] ?? []).map((v) => num(v));
 
-      const t5Col = (cols[11] ?? []).map((v) => (num(v)/10));
-      const mwPower5Col = (cols[12] ?? []).map((v) => (num(v)));
+      const t4Col = (cols[9] ?? []).map((v) => num(v) / 10);
+      const mwPower4Col = (cols[10] ?? []).map((v) => num(v));
 
-      const t6Col = (cols[13] ?? []).map((v) => (num(v)/10));
-      const mwPower6Col = (cols[14] ?? []).map((v) => (num(v)));
+      const t5Col = (cols[11] ?? []).map((v) => num(v) / 10);
+      const mwPower5Col = (cols[12] ?? []).map((v) => num(v));
+
+      const t6Col = (cols[13] ?? []).map((v) => num(v) / 10);
+      const mwPower6Col = (cols[14] ?? []).map((v) => num(v));
 
       setTimeLabels(secCol.map(toTimeLabel));
-
       setPressureData(pCol);
       setTemp1Data(t1Col);
-      setMwPower1Data(mwPower1Col);
+      setOriginalMwPower1Data(mwPower1Col);
 
       setTemp2Data(t2Col);
       setMwPower2Data(mwPower2Col);
@@ -173,7 +223,6 @@ const startTraining = async () => {
 
       setTemp6Data(t6Col);
       setMwPower6Data(mwPower6Col);
-
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown fetch error";
       setError(msg);
@@ -189,35 +238,33 @@ const startTraining = async () => {
   }, [fetchCsv]);
 
   useEffect(() => {
-  fetchStatus();
+    fetchStatus();
+    const id = setInterval(fetchStatus, 2000);
+    return () => clearInterval(id);
+  }, [fetchStatus]);
 
-  const id = setInterval(fetchStatus, 2000);
-  return () => clearInterval(id);
-}, [fetchStatus]);
-
-  // If you want “near real time” without SSE/WebSocket, uncomment this polling:
-  // SET REFRESH TIME CSV
-useEffect(() => {
-  const id = setInterval(fetchCsv, 2500);
-  return () => clearInterval(id);
-}, [fetchCsv]);
+  // Polling for CSV updates
+  useEffect(() => {
+    const id = setInterval(fetchCsv, 2500);
+    return () => clearInterval(id);
+  }, [fetchCsv]);
 
   const charts = useMemo(
     () => [
       { name: "", max: 100, unit: "Temp Cassetto 1 (°C)", data: temp1Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 100, unit: "MW Power Cassetto 1 (%)", data: mwPower1Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 4095, unit: "MW Power Cassetto 1 (%)", data: displayMwPower1Data, color: "rgba(98,131,149,0.5)" },
       { name: "", max: 100, unit: "Temp Cassetto 2 (°C)", data: temp2Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 100, unit: "MW Power Cassetto 2 (%)", data: mwPower2Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 4095, unit: "MW Power Cassetto 2 (%)", data: mwPower2Data, color: "rgba(98,131,149,0.5)" },
       { name: "", max: 100, unit: "Temp Cassetto 3 (°C)", data: temp3Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 100, unit: "MW Power Cassetto 3 (%)", data: mwPower3Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 4095, unit: "MW Power Cassetto 3 (%)", data: mwPower3Data, color: "rgba(98,131,149,0.5)" },
       { name: "", max: 100, unit: "Temp Cassetto 4 (°C)", data: temp4Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 100, unit: "MW Power Cassetto 4 (%)", data: mwPower4Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 4095, unit: "MW Power Cassetto 4 (%)", data: mwPower4Data, color: "rgba(98,131,149,0.5)" },
       { name: "", max: 100, unit: "Temp Cassetto 5 (°C)", data: temp5Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 100, unit: "MW Power Cassetto 5 (%)", data: mwPower5Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 4095, unit: "MW Power Cassetto 5 (%)", data: mwPower5Data, color: "rgba(98,131,149,0.5)" },
       { name: "", max: 100, unit: "Temp Cassetto 6 (°C)", data: temp6Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 100, unit: "MW Power Cassetto 6 (%)", data: mwPower6Data, color: "rgba(98,131,149,0.5)" },
+      { name: "", max: 4095, unit: "MW Power Cassetto 6 (%)", data: mwPower6Data, color: "rgba(98,131,149,0.5)" },
     ],
-    [temp1Data, mwPower1Data, temp2Data, mwPower2Data, temp3Data,mwPower3Data, temp4Data, mwPower4Data, temp5Data, mwPower5Data, temp6Data, mwPower6Data]
+    [temp1Data, displayMwPower1Data, temp2Data, mwPower2Data, temp3Data, mwPower3Data, temp4Data, mwPower4Data, temp5Data, mwPower5Data, temp6Data, mwPower6Data]
   );
 
   // Keyboard + wheel nav in SINGLE view
@@ -234,7 +281,6 @@ useEffect(() => {
     };
 
     const onWheel = (e: WheelEvent) => {
-      // If you want to avoid hijacking scrolling, you can bind wheel on a container instead of window.
       if (e.deltaY < 0) setActiveChart((p) => (p + 1) % charts.length);
       else setActiveChart((p) => (p === 0 ? charts.length - 1 : p - 1));
     };
@@ -248,8 +294,6 @@ useEffect(() => {
     };
   }, [viewMode, charts.length]);
 
-
-
   const overlay = useMemo(() => {
     if (hoverIndex < 0) return null;
 
@@ -260,100 +304,109 @@ useEffect(() => {
           <strong className="text-blue-400">Temp Cassetto 1:</strong>{" "}
           {getAt(temp1Data, hoverIndex).toFixed(1)} °C
         </div>
+        <div>
+          <strong className="text-blue-400">MW Power Cassetto 1:</strong>{" "}
+          {getAt(displayMwPower1Data, hoverIndex).toFixed(1)}%
+        </div>
       </div>
     );
-  }, [hoverIndex, temp1Data]);
-
-//              <strong className="text-blue-400">MW Power medio:</strong> {avg(mwPower1Data).toFixed(1)}%
-//              <strong className="text-blue-400">MW Power medio:</strong> {avg(mwPower2Data).toFixed(1)}%
-//              <strong className="text-blue-400">MW Power medio:</strong> {avg(mwPower3Data).toFixed(1)}%
-//              <strong className="text-blue-400">MW Power medio:</strong> {avg(mwPower4Data).toFixed(1)}%
-//              <strong className="text-blue-400">MW Power medio:</strong> {avg(mwPower5Data).toFixed(1)}%
-//              <strong className="text-blue-400">MW Power medio:</strong> {avg(mwPower6Data).toFixed(1)}%
-
+  }, [hoverIndex, temp1Data, displayMwPower1Data]);
 
   return (
     <DashboardLayout
       sidebar={
         <div className="space-y-2 text-sm text-gray-400 pl-4 pt-4">
-        <div className="pt-4 space-y-2">
-          <div>
-        Mode: {
-          !isRunning
-            ? "Stopped"
-            : mode === "training"
-            ? "Training"
-            : mode === "real"
-            ? "Real"
-            : "Unknown"
-        }
-</div>
-  <button
-    onClick={startMeasurement}
-    className="bg-green-600 px-3 py-1 rounded text-white"
-  >
-    Start Measurement
-  </button>
-      <button
-        onClick={stopMeasurement}
-        className="bg-red-600 px-3 py-1 rounded text-white"
-      >
-        Stop Measurement
-      </button>
-    </div>
-<button
-  onClick={startTraining}
-  className="bg-blue-600 px-3 py-1 rounded text-white"
->
-  Training Mode
-</button>
-          <div>
+          <div className="pt-4 space-y-2">
+            <div>
+              Mode:{" "}
+              {!isRunning
+                ? "Stopped"
+                : mode === "training"
+                ? "Training"
+                : mode === "real"
+                ? "Real"
+                : "Unknown"}
+            </div>
+            <button
+              onClick={startMeasurement}
+              className="bg-green-600 px-3 py-1 rounded text-white"
+            >
+              Start Measurement
+            </button>
+            <button
+              onClick={stopMeasurement}
+              className="bg-red-600 px-3 py-1 rounded text-white"
+            >
+              Stop Measurement
+            </button>
+          </div>
+          <button
+            onClick={startTraining}
+            className="bg-blue-600 px-3 py-1 rounded text-white"
+          >
+            Training Mode
+          </button>
+
+          {/* Override input for Cassetto 1 */}
+          <div className="pt-2">
+            <label className="block text-sm font-medium text-blue-400">
+              Override MW Power Cassetto 1 (%)
+            </label>
+            <input
+              type="number"
+              value={overrideInput}
+              onChange={handleOverrideChange}
+              placeholder="0 = disabled"
+              className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
 
           <div className="pt-4 space-y-2">
-            {loading && <div className="text-blue-400-300">Loading…</div>}
+            {loading && <div className="text-blue-400">Loading…</div>}
             {error && <div className="text-blue-400">{error}</div>}
 
-          <div>
-          <strong className="text-blue-400">Pressione HSCD in millibar:</strong>{" "}
-          {getAt(pressureData, pressureData.length - 1, 0).toFixed(1)} mbar
-          </div>
+            <div>
+              <strong className="text-blue-400">Pressione HSCD in millibar:</strong>{" "}
+              {getAt(pressureData, pressureData.length - 1, 0).toFixed(1)} mbar
+            </div>
 
-            <h1 className="text-blue-400 w-50 scroll-m-20 text-4xl font-bold tracking-tight lg:text">MEDIE</h1>
+            <h1 className="text-blue-400 w-50 scroll-m-20 text-4xl font-bold tracking-tight lg:text">
+              MEDIE
+            </h1>
             <strong className="text-blue-400">CASSETTO 1</strong>
             <div>
               <strong className="text-blue-400">Temperatura media:</strong> {avg(temp1Data).toFixed(1)} °C
-              <br/>
+              <br />
             </div>
 
             <strong className="text-blue-400">CASSETTO 2</strong>
             <div>
               <strong className="text-blue-400">Temperatura media:</strong> {avg(temp2Data).toFixed(1)} °C
-              <br/>
+              <br />
             </div>
 
             <strong className="text-blue-400">CASSETTO 3</strong>
             <div>
               <strong className="text-blue-400">Temperatura media:</strong> {avg(temp3Data).toFixed(1)} °C
-              <br/>
+              <br />
             </div>
 
-                        <strong className="text-blue-400">CASSETTO 4</strong>
+            <strong className="text-blue-400">CASSETTO 4</strong>
             <div>
               <strong className="text-blue-400">Temperatura media:</strong> {avg(temp4Data).toFixed(1)} °C
-              <br/>
+              <br />
             </div>
 
             <strong className="text-blue-400">CASSETTO 5</strong>
             <div>
               <strong className="text-blue-400">Temperatura media:</strong> {avg(temp5Data).toFixed(1)} °C
-              <br/>
+              <br />
             </div>
 
             <strong className="text-blue-400">CASSETTO 6</strong>
             <div>
               <strong className="text-blue-400">Temperatura media:</strong> {avg(temp6Data).toFixed(1)} °C
-              <br/>
+              <br />
             </div>
             {overlay && <div className="w-[40] space-y-4 text-sm z-50">{overlay}</div>}
           </div>
@@ -368,7 +421,7 @@ useEffect(() => {
               name_measurement={ch.name}
               max_x_axis={ch.max}
               unit={ch.unit}
-              unitOfTime="sec"
+              unitOfTime=""
               labels={timeLabels}
               data={ch.data}
               onHoverIndex={setHoverIndex}

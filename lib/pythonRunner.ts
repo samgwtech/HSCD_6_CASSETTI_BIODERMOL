@@ -32,7 +32,7 @@ export function startTraining() {
     "--source",
     "csv/source.csv",
     "--interval",
-    "1",
+    "10",
     "--loop",
   ]);
 
