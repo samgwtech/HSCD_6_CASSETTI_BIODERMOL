@@ -37,12 +37,19 @@ function avg(arr: number[]) {
 export default function Home() {
   const [isRunning, setIsRunning] = useState(false);
   const [mode, setMode] = useState<"real" | "training" | null>(null);
+  const [chillerOn, setChillerOn] = useState(false);
+  const [chillerLoading, setChillerLoading] = useState(false);
+  const [selectedMW, setSelectedMW] = useState<string>("MW1");
+  const [mwValue, setMwValue] = useState<string>("");
+  const [mwLoading, setMwLoading] = useState(false);
+
   const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch("/api/python/status", { cache: "no-store" });
       const data = await res.json();
       setIsRunning(data.running);
       setMode(data.mode);
+
     } catch (e) {
       console.error("Failed to fetch status", e);
     }
@@ -78,6 +85,43 @@ export default function Home() {
     }
   };
 
+
+const toggleChiller = async () => {
+    setChillerLoading(true);
+    try {
+      const newValue = chillerOn ? 0 : 1;
+      const url = `https://192.168.151.102/api/set/op?op=M&index=232&val=${newValue}`;
+      const res = await fetch(url, {
+        headers: { "Authorization": "Bearer [add_apikey]" }
+      });
+      if (res.ok) setChillerOn(newValue === 1);
+    } catch (e) {
+      console.error("Chiller error:", e);
+    } finally {
+      setChillerLoading(false);
+    }
+  };
+
+const setMWPower = async () => {
+    if (!mwValue) return;
+    setMwLoading(true);
+    try {
+      const mwIndex = selectedMW === "MW1" ? 233 : selectedMW === "MW2" ? 234 : 235; // Adatta gli index
+      const url = `https://192.168.151.102/api/set/op?op=MW&index=${mwIndex}&val=${mwValue}`;
+      const res = await fetch(url, {
+        headers: { "Authorization": "Bearer [add_apikey]" }
+      });
+      if (res.ok) {
+        alert(`${selectedMW} impostato a ${mwValue}`);
+        setMwValue("");
+      }
+    } catch (e) {
+      console.error("MW Power error:", e);
+    } finally {
+      setMwLoading(false);
+    }
+  };
+
   const [hoverIndex, setHoverIndex] = useState<number>(-1);
   const [viewMode] = useState<ViewMode>("grid");
   const [activeChart, setActiveChart] = useState<number>(0);
@@ -93,7 +137,7 @@ export default function Home() {
   const [temp1Data, setTemp1Data] = useState<number[]>([]);
   const [originalMwPower1Data, setOriginalMwPower1Data] = useState<number[]>([]);
   const [overrides, setOverrides] = useState<Override[]>([]);
-  const [overrideInput, setOverrideInput] = useState<string>("");
+  //const [overrideInput, setOverrideInput] = useState<string>("");
 
   const [temp2Data, setTemp2Data] = useState<number[]>([]);
   const [mwPower2Data, setMwPower2Data] = useState<number[]>([]);
@@ -152,7 +196,7 @@ export default function Home() {
   }, [originalMwPower1Data, overrides]);
 
   // Handle override input changes
-  const handleOverrideChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  {/*const handleOverrideChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setOverrideInput(value);
     const numValue = parseFloat(value);
@@ -173,7 +217,27 @@ export default function Home() {
       // Clear all overrides
       clearOverrides();
     }
-  };
+  };*/}
+
+  const handleMWValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const value = e.target.value;
+  setMwValue(value);
+  const numValue = parseFloat(value);
+  if (value && !isNaN(numValue) && numValue !== 0) {
+    // Determina quale cassetto modificare in base al selectedMW
+    //const mwIndex = parseInt(selectedMW.replace("MW", ""));
+    let startIdx = hoverIndex;
+    if (startIdx === -1 && originalMwPower1Data.length > 0) {
+      startIdx = originalMwPower1Data.length - 1;
+    }
+    if (startIdx >= 0) {
+      // Aggiorna il grafico in tempo reale
+      addOverride(startIdx, numValue);
+    }
+  } else {
+    clearOverrides();
+  }
+};
 
   const fetchCsv = useCallback(async () => {
     setError(null);
@@ -347,18 +411,55 @@ export default function Home() {
             Training Mode
           </button>
 
+          <button
+            onClick={toggleChiller}
+            disabled={chillerLoading}
+            className={`px-3 py-1 rounded text-white ${
+              chillerOn ? "bg-cyan-600" : "bg-gray-600"
+            } ${chillerLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            {chillerLoading ? "Loading..." : chillerOn ? "Chiller: ON" : "Chiller: OFF"}
+          </button>
+
+          <div className="pt-4 space-y-2">
+            <label className="block text-sm font-medium text-blue-400">Imposta MW Power</label>
+            <select
+              value={selectedMW}
+              onChange={(e) => setSelectedMW(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white"
+            >
+              <option>MW246</option>
+              <option>MW247</option>
+              <option>MW248</option>
+            </select>
+            <input
+              type="number"
+              value={mwValue}
+              onChange={handleMWValueChange}
+              placeholder="Valore (0-4095)"
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white"
+            />
+            <button
+              onClick={setMWPower}
+              disabled={mwLoading || !mwValue}
+              className="w-full bg-purple-600 px-3 py-1 rounded text-white disabled:opacity-50"
+            >
+              {mwLoading ? "Loading..." : "Imposta MW"}
+            </button>
+          </div>
+
           {/* Override input for Cassetto 1 */}
           <div className="pt-2">
             <label className="block text-sm font-medium text-blue-400">
-              Override MW Power Cassetto 1 (%)
+              {/* Override MW Power Cassetto 1 (%)*/}
             </label>
-            <input
+            {/* <input
               type="number"
               value={overrideInput}
               onChange={handleOverrideChange}
               placeholder="0 = disabled"
               className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            />
+            />*/}
           </div>
 
           <div className="pt-4 space-y-2">
