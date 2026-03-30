@@ -2,11 +2,15 @@ import requests
 import csv
 import time
 from datetime import datetime
+import os
+from dotenv import load_dotenv
 
+load_dotenv()  # Load environment variables from .env file
 IP_SEVIO = "10.139.216.102"
 IP_PLC = "192.168.151.102"
 
-IP_TO_BE_USED = IP_SEVIO
+#set IP_TO_BE_USED as IP_ADDRESS from .env
+IP_TO_BE_USED = os.getenv("IP_ADDRESS", IP_PLC)  # default to IP_PLC if not set
 
 APIKEY = "44063c606ae224326747c8d41969ce696a04999d6860477438c242f31c841a80c3b54ffe65dec0ce"
 DURATION_OF_MEASUREMENT = 25 * 60  # 25 minutes in seconds
