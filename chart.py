@@ -90,6 +90,7 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
         ##SET_REQUEST_URL = (
         ##    f"https://{IP_TO_BE_USED}/api/set/op?op=M&index=232&val=1")
         ##requests.get(SET_REQUEST_URL,verify=False)
+        # /api/set/op?op=MW&index=<NUMERO>&val=<VALORE>
         print("\nAPI Request:", GET_REQUEST_URL)
         response = requests.get(GET_REQUEST_URL, headers=headers, verify=False)
         if response.status_code == 200:
