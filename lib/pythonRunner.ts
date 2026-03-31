@@ -3,6 +3,49 @@ import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 let processRef: ChildProcessWithoutNullStreams | null = null;
 let currentMode: "real" | "training" | null = null;
 
+
+export function turnOffChiller() {
+  if (processRef) return;
+
+  processRef = spawn("python", ["chiller/turnOffChiller.py"]);
+
+  currentMode = "real";
+
+  processRef.stdout.on("data", (d: Buffer) => {
+    console.log("[SetChiller]", d.toString());
+  });
+
+    processRef.stderr.on("data", (d: Buffer) => {
+    console.error("[SetChiller ERROR]", d.toString());
+  });
+
+  processRef.on("close", () => {
+    processRef = null;
+    currentMode = null;
+  });
+}
+
+export function setChiller() {
+  if (processRef) return;
+
+  processRef = spawn("python", ["chiller/setChiller.py"]);
+
+  currentMode = "real";
+
+  processRef.stdout.on("data", (d: Buffer) => {
+    console.log("[SetChiller]", d.toString());
+  });
+
+    processRef.stderr.on("data", (d: Buffer) => {
+    console.error("[SetChiller ERROR]", d.toString());
+  });
+
+  processRef.on("close", () => {
+    processRef = null;
+    currentMode = null;
+  });
+}
+
 export function startReal() {
   if (processRef) return;
 
