@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import DashboardLayout from "@/components/ui/DashboardLayout";
 import ChartComponent from "@/components/ui/ChartComponent";
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; // Disable TLS cert validation globally (use with caution!)
+
 type CsvApiResponse = {
   columns: (number | string)[][];
 };
@@ -39,7 +41,7 @@ export default function Home() {
   const [mode, setMode] = useState<"real" | "training" | null>(null);
   const [chillerOn, setChillerOn] = useState(false);
   const [chillerLoading, setChillerLoading] = useState(false);
-  const [selectedMW, setSelectedMW] = useState<string>("MW1");
+  const [selectedMW, setSelectedMW] = useState<string>("MW246");
   const [mwValue, setMwValue] = useState<string>("");
   const [mwLoading, setMwLoading] = useState(false);
 
@@ -86,7 +88,7 @@ export default function Home() {
   };
 
 
-const toggleChiller = async () => {
+{/*const toggleChiller = async () => {
     setChillerLoading(true);
     try {
       const newValue = chillerOn ? 0 : 1;
@@ -100,27 +102,70 @@ const toggleChiller = async () => {
     } finally {
       setChillerLoading(false);
     }
-  };
+  };*/}
+
+const toggleChiller = async () => {
+  setChillerLoading(true);
+  const newValue = chillerOn ? 0 : 1;
+  try {
+    const res = await fetch("/api/chiller", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newValue })
+    });
+    if (res.ok) {
+      setChillerOn(newValue === 1);
+    }
+    setChillerLoading(false);
+  } catch (e) {
+    console.error("Error:", e);
+    setChillerLoading(false);
+  }
+};
 
 const setMWPower = async () => {
-    if (!mwValue) return;
-    setMwLoading(true);
-    try {
-      const mwIndex = selectedMW === "MW1" ? 233 : selectedMW === "MW2" ? 234 : 235; // Adatta gli index
-      const url = `https://192.168.151.102/api/set/op?op=MW&index=${mwIndex}&val=${mwValue}`;
-      const res = await fetch(url, {
-        headers: { "Authorization": "Bearer [add_apikey]" }
-      });
-      if (res.ok) {
-        alert(`${selectedMW} impostato a ${mwValue}`);
-        setMwValue("");
-      }
-    } catch (e) {
-      console.error("MW Power error:", e);
-    } finally {
-      setMwLoading(false);
+  if (!mwValue) return;
+
+  setMwLoading(true);
+
+  try {
+    const MW_MAP: Record<string, number> = {
+      MW1: 1,
+      MW2: 2,
+      MW3: 3,
+    };
+
+    const mwIndex = MW_MAP[selectedMW];
+
+    if (!mwIndex) {
+      console.error("Invalid MW selection");
+      return;
     }
-  };
+
+    const res = await fetch("/api/mw", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        index: mwIndex,
+        value: Number(mwValue),
+      }),
+    });
+
+    if (res.ok) {
+      alert(`${selectedMW} impostato a ${mwValue}`);
+      setMwValue("");
+    } else {
+      const err = await res.json();
+      console.error("MW API error:", err);
+    }
+  } catch (e) {
+    console.error("MW Power error:", e);
+  } finally {
+    setMwLoading(false);
+  }
+};
 
   const [hoverIndex, setHoverIndex] = useState<number>(-1);
   const [viewMode] = useState<ViewMode>("grid");
@@ -137,6 +182,8 @@ const setMWPower = async () => {
   const [temp1Data, setTemp1Data] = useState<number[]>([]);
   const [originalMwPower1Data, setOriginalMwPower1Data] = useState<number[]>([]);
   const [overrides, setOverrides] = useState<Override[]>([]);
+  const [overrides2, setOverrides2] = useState<Override[]>([]);
+  const [overrides3, setOverrides3] = useState<Override[]>([]);
   //const [overrideInput, setOverrideInput] = useState<string>("");
 
   const [temp2Data, setTemp2Data] = useState<number[]>([]);
@@ -172,6 +219,32 @@ const setMWPower = async () => {
     setOverrides([]);
   }, []);
 
+  const addOverride2 = useCallback((startIndex: number, value: number) => {
+  setOverrides2((prev) => {
+    const filtered = prev.filter((o) => o.startIndex < startIndex);
+    const newOverrides = [...filtered, { startIndex, value }];
+    newOverrides.sort((a, b) => a.startIndex - b.startIndex);
+    return newOverrides;
+  });
+}, []);
+
+const clearOverrides2 = useCallback(() => {
+  setOverrides2([]);
+}, []);
+
+const addOverride3 = useCallback((startIndex: number, value: number) => {
+  setOverrides3((prev) => {
+    const filtered = prev.filter((o) => o.startIndex < startIndex);
+    const newOverrides = [...filtered, { startIndex, value }];
+    newOverrides.sort((a, b) => a.startIndex - b.startIndex);
+    return newOverrides;
+  });
+}, []);
+
+const clearOverrides3 = useCallback(() => {
+  setOverrides3([]);
+}, []);
+
   // Compute displayed power for first cassette with layered overrides applied
   const displayMwPower1Data = useMemo(() => {
     if (originalMwPower1Data.length === 0) return [];
@@ -194,6 +267,44 @@ const setMWPower = async () => {
     }
     return result;
   }, [originalMwPower1Data, overrides]);
+
+  const displayMwPower2Data = useMemo(() => {
+  if (mwPower2Data.length === 0) return [];
+  if (overrides2.length === 0) return mwPower2Data;
+  const result = [...mwPower2Data];
+  for (let i = 0; i < result.length; i++) {
+    let applicableOverride: Override | undefined;
+    for (let j = overrides2.length - 1; j >= 0; j--) {
+      if (overrides2[j].startIndex <= i) {
+        applicableOverride = overrides2[j];
+        break;
+      }
+    }
+    if (applicableOverride) {
+      result[i] = applicableOverride.value;
+    }
+  }
+  return result;
+}, [mwPower2Data, overrides2]);
+
+const displayMwPower3Data = useMemo(() => {
+  if (mwPower3Data.length === 0) return [];
+  if (overrides3.length === 0) return mwPower3Data;
+  const result = [...mwPower3Data];
+  for (let i = 0; i < result.length; i++) {
+    let applicableOverride: Override | undefined;
+    for (let j = overrides3.length - 1; j >= 0; j--) {
+      if (overrides3[j].startIndex <= i) {
+        applicableOverride = overrides3[j];
+        break;
+      }
+    }
+    if (applicableOverride) {
+      result[i] = applicableOverride.value;
+    }
+  }
+  return result;
+}, [mwPower3Data, overrides3]);
 
   // Handle override input changes
   {/*const handleOverrideChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -219,23 +330,29 @@ const setMWPower = async () => {
     }
   };*/}
 
-  const handleMWValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+const handleMWValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const value = e.target.value;
   setMwValue(value);
   const numValue = parseFloat(value);
   if (value && !isNaN(numValue) && numValue !== 0) {
-    // Determina quale cassetto modificare in base al selectedMW
-    //const mwIndex = parseInt(selectedMW.replace("MW", ""));
     let startIdx = hoverIndex;
     if (startIdx === -1 && originalMwPower1Data.length > 0) {
       startIdx = originalMwPower1Data.length - 1;
     }
     if (startIdx >= 0) {
-      // Aggiorna il grafico in tempo reale
-      addOverride(startIdx, numValue);
+      // Aggiorna il cassetto corretto in base a selectedMW
+      if (selectedMW === "MW246") {
+        addOverride(startIdx, numValue);
+      } else if (selectedMW === "MW247") {
+        addOverride2(startIdx, numValue);
+      } else if (selectedMW === "MW248") {
+        addOverride3(startIdx, numValue);
+      }
     }
   } else {
     clearOverrides();
+    clearOverrides2();
+    clearOverrides3();
   }
 };
 
@@ -313,23 +430,18 @@ const setMWPower = async () => {
     return () => clearInterval(id);
   }, [fetchCsv]);
 
-  const charts = useMemo(
-    () => [
-      { name: "", max: 100, unit: "Temp Cassetto 1 (°C)", data: temp1Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 4095, unit: "MW Power Cassetto 1 (%)", data: displayMwPower1Data, color: "rgba(98,131,149,0.5)" },
-      { name: "", max: 100, unit: "Temp Cassetto 2 (°C)", data: temp2Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 4095, unit: "MW Power Cassetto 2 (%)", data: mwPower2Data, color: "rgba(98,131,149,0.5)" },
-      { name: "", max: 100, unit: "Temp Cassetto 3 (°C)", data: temp3Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 4095, unit: "MW Power Cassetto 3 (%)", data: mwPower3Data, color: "rgba(98,131,149,0.5)" },
-      { name: "", max: 100, unit: "Temp Cassetto 4 (°C)", data: temp4Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 4095, unit: "MW Power Cassetto 4 (%)", data: mwPower4Data, color: "rgba(98,131,149,0.5)" },
-      { name: "", max: 100, unit: "Temp Cassetto 5 (°C)", data: temp5Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 4095, unit: "MW Power Cassetto 5 (%)", data: mwPower5Data, color: "rgba(98,131,149,0.5)" },
-      { name: "", max: 100, unit: "Temp Cassetto 6 (°C)", data: temp6Data, color: "rgba(150, 70, 54, 0.5)" },
-      { name: "", max: 4095, unit: "MW Power Cassetto 6 (%)", data: mwPower6Data, color: "rgba(98,131,149,0.5)" },
-    ],
-    [temp1Data, displayMwPower1Data, temp2Data, mwPower2Data, temp3Data, mwPower3Data, temp4Data, mwPower4Data, temp5Data, mwPower5Data, temp6Data, mwPower6Data]
-  );
+const charts = useMemo(
+  () => [
+    { name: "", max: 100, unit: "Temp Cassetto 1 (°C)", data: temp1Data, color: "rgba(150, 70, 54, 0.5)" },
+    { name: "", max: 4095, unit: "MW Power Cassetto 1 (%)", data: displayMwPower1Data, color: "rgba(98,131,149,0.5)" },
+    { name: "", max: 100, unit: "Temp Cassetto 2 (°C)", data: temp2Data, color: "rgba(150, 70, 54, 0.5)" },
+    { name: "", max: 4095, unit: "MW Power Cassetto 2 (%)", data: displayMwPower2Data, color: "rgba(98,131,149,0.5)" }, // ← CAMBIATO
+    { name: "", max: 100, unit: "Temp Cassetto 3 (°C)", data: temp3Data, color: "rgba(150, 70, 54, 0.5)" },
+    { name: "", max: 4095, unit: "MW Power Cassetto 3 (%)", data: displayMwPower3Data, color: "rgba(98,131,149,0.5)" }, // ← CAMBIATO
+    // ... resto uguale
+  ],
+  [temp1Data, displayMwPower1Data, temp2Data, displayMwPower2Data, temp3Data, displayMwPower3Data, temp4Data, mwPower4Data, temp5Data, mwPower5Data, temp6Data, mwPower6Data]
+);
 
   // Keyboard + wheel nav in SINGLE view
   useEffect(() => {
@@ -382,14 +494,14 @@ const setMWPower = async () => {
         <div className="space-y-2 text-sm text-gray-400 pl-4 pt-4">
           <div className="pt-4 space-y-2">
             <div>
-              Mode:{" "}
-              {!isRunning
+              Mode:{" "} Real
+              {/*{!isRunning
                 ? "Stopped"
                 : mode === "training"
                 ? "Training"
                 : mode === "real"
                 ? "Real"
-                : "Unknown"}
+                : "Unknown"}*/}
             </div>
             <button
               onClick={startMeasurement}

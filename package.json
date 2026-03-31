@@ -6,6 +6,7 @@
     "dev": "next dev --turbopack",
 "training":"concurrently -k -n PY,NEXT \"py -3 training_chart.py --source csv\\\\source.csv --interval 1\" --loop \"next dev\"",
     "chart": "python chart.py",
+    "test": "python run_this.py",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

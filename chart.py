@@ -12,7 +12,7 @@ IP_PLC = "192.168.151.102"
 #set IP_TO_BE_USED as IP_ADDRESS from .env
 IP_TO_BE_USED = os.getenv("IP_ADDRESS", IP_PLC)  # default to IP_PLC if not set
 
-APIKEY = "44063c606ae224326747c8d41969ce696a04999d6860477438c242f31c841a80c3b54ffe65dec0ce"
+APIKEY = "aa554fa5a1d8135fc6d139d865a4f66f55916ddb04742bcec5622f17a292b50d54327980e36a38e1"
 DURATION_OF_MEASUREMENT = 25 * 60  # 25 minutes in seconds
 
 sleep_interval = 8
@@ -52,17 +52,25 @@ MW_TEMP_DRAWER_5 = TEMP_2_2
 MW_POWER_DRAWER_6 = POW_2_3
 MW_TEMP_DRAWER_6 = TEMP_2_3
 
+#SET_MW_TO_VALUE
+SET_REQUEST_URL_CHANGE_PW = (
+    f"https://{IP_TO_BE_USED}/api/set/op?op=MW&index=246&val=800"
+)
+
+SET_REQUEST_URL_SET_M = (
+    f"https://{IP_TO_BE_USED}/api/set/op?op=M&index=1&val=0"
+)
+
+
 #f"https://192.168.151.102/api/get/data?elm="
 # Build URL with '+' as separator
 GET_REQUEST_URL = (
+    f"https://{IP_TO_BE_USED}/api/set/op?op=MW&index=1&val=68"
+)
+#scrivi M239
+SINGLE_GET_REQUEST_URL = (
     f"https://{IP_TO_BE_USED}/api/get/data?elm="
-    f"MW({MW_VALORE_VUOTO_MACCHINA})+"
-    f"MW({MW_TEMP_DRAWER_1})+MW({MW_POWER_DRAWER_1}+"
-    f"MW({MW_TEMP_DRAWER_2})+MW({MW_POWER_DRAWER_2}+"
-    f"MW({MW_TEMP_DRAWER_3})+MW({MW_POWER_DRAWER_3}+"
-    f"MW({MW_TEMP_DRAWER_4})+MW({MW_POWER_DRAWER_4}+"
-    f"MW({MW_TEMP_DRAWER_5})+MW({MW_POWER_DRAWER_5}+"
-    f"MW({MW_TEMP_DRAWER_6})+MW({MW_POWER_DRAWER_6}"
+    f"M(1)"
 )
 
 # Create CSV file with current date/time in the name
@@ -88,10 +96,10 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
     try:
         ##print("\nSET REQUEST")
         SET_REQUEST_URL = (
-            f"https://{IP_TO_BE_USED}/api/set/op?op=M&index=232&val=1")
+            f"https://{IP_TO_BE_USED}/api/set/op?op=M&index=1&val=1")
         requests.get(SET_REQUEST_URL,verify=False)
         # /api/set/op?op=MW&index=<NUMERO>&val=<VALORE>
-        print("\nAPI Request:", GET_REQUEST_URL)
+        print("\nAPI Request:", SINGLE_GET_REQUEST_URL)
         response = requests.get(GET_REQUEST_URL, headers=headers, verify=False)
         if response.status_code == 200:
             data = response.json()
