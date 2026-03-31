@@ -3,6 +3,25 @@ import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 let processRef: ChildProcessWithoutNullStreams | null = null;
 let currentMode: "real" | "training" | null = null;
 
+export function setPower() {
+  if (processRef) return;
+  processRef = spawn("python", ["power/setPower.py "]);
+
+  currentMode = "real";
+
+  processRef.stdout.on("data", (d: Buffer) => {
+    console.log("[SetPower]", d.toString());
+  });
+
+    processRef.stderr.on("data", (d: Buffer) => {
+    console.error("[SetPower ERROR]", d.toString());
+  });
+
+  processRef.on("close", () => {
+    processRef = null;
+    currentMode = null;
+  });
+}
 
 export function turnOffChiller() {
   if (processRef) return;

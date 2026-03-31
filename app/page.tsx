@@ -43,6 +43,21 @@ export default function Home() {
   const [chillerLoading, setChillerLoading] = useState(false);
   const [chillerTurnOff, setChillerTurnOff] = useState(false);
   const [chillerStartLoading, setChillerStartLoading] = useState(false);
+  const [PowerValue, setPowerValue] = useState(' ');
+  const [powerAddress, setPowerAddress] = useState('1');
+
+  const handleSetPower = async () => {
+    await fetch("/api/update-env", {
+      method: "POST",
+      body: JSON.stringify({
+        index: powerAddress,
+        value: PowerValue})
+    });
+    console.log(`Power set to ${PowerValue} at address ${powerAddress}`);
+    await fetch('/api/power', { method: 'POST' });
+    setPowerValue(' ');
+    console.log(`Power value updated`);
+  }
 
   const handleChillerTurnOff = async () => {
     setChillerTurnOff(true);
@@ -316,6 +331,27 @@ const charts = useMemo(
           >
             Training Mode
           </button>
+
+          <div className="p-4">
+            <input
+              type="number"
+              placeholder="MW Address (246)"
+              value={powerAddress}
+              onChange={(e) => setPowerAddress(e.target.value)}
+              className="border p-2 mr-2"
+            />
+            <input
+              type="number"
+              placeholder="Power value"
+              value={PowerValue}
+              onChange={(e) => setPowerValue(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSetPower()}
+              className="border p-2 mr-2"
+            />
+            <button onClick={handleSetPower} className="bg-blue-500 text-white px-4 py-2">
+              Set Power
+            </button>
+          </div>
 
           <div className="pt-4 space-y-2">
             {loading && <div className="text-blue-400">Loading…</div>}
