@@ -52,15 +52,17 @@ MW_TEMP_DRAWER_5 = TEMP_2_2
 MW_POWER_DRAWER_6 = POW_2_3
 MW_TEMP_DRAWER_6 = TEMP_2_3
 
-#f"https://192.168.151.102/api/get/data?elm="
-# Build URL with '+' as separator
-GET_REQUEST_URL = (
-    f"https://{IP_TO_BE_USED}/api/set/op?op=MW&index=1&val=151"
-)
-#scrivi M239
-SINGLE_GET_REQUEST_URL = (
-    f"https://{IP_TO_BE_USED}/api/get/data?elm="
-    f"M(1)"
+
+GET_URL = (
+    f"https://192.168.151.100/api/get/data?elm="
+    f"M({M_START})+"
+    f"MW({MW_VALORE_VUOTO_MACCHINA})+"
+    f"MW({MW_TEMP_DRAWER_1})+"
+    f"MW({MW_TEMP_DRAWER_2})+"
+    f"MW({MW_TEMP_DRAWER_3})+"
+    f"MW({MW_TEMP_DRAWER_4})+"
+    f"MW({MW_TEMP_DRAWER_5})+"
+    f"MW({MW_TEMP_DRAWER_6})"
 )
 
 # Create CSV file with current date/time in the name
@@ -84,13 +86,10 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
     headers = {'Authorization': f"Bearer {APIKEY}"}
 
     try:
-        ##print("\nSET REQUEST")
-        SET_REQUEST_URL = (
-            f"https://{IP_TO_BE_USED}/api/set/op?op=M&index=1&val=1")
-        requests.get(SET_REQUEST_URL,verify=False)
+        requests.get(GET_URL,verify=False)
         # /api/set/op?op=MW&index=<NUMERO>&val=<VALORE>
-        print("\nAPI Request:", SINGLE_GET_REQUEST_URL)
-        response = requests.get(GET_REQUEST_URL, headers=headers, verify=False)
+        print("\nAPI Request:", GET_URL)
+        response = requests.get(GET_URL, headers=headers, verify=False)
         if response.status_code == 200:
             data = response.json()
             # Retrieve MW measurements from MWSINGLE and M measurements from MSINGLE
@@ -148,8 +147,6 @@ while (datetime.now() - start_time).total_seconds() < DURATION_OF_MEASUREMENT:
 
             with open(file_name, mode='a', newline='') as file:
                 writer = csv.writer(file)
-            #      index:0 lapsed_seconds, index:1 current_time_str, index:2 valore_vuoto_macchina, index:3 temp_cassetto_1, index:4 pow_cassetto_1, index:5 temp_cassetto_2, index:6 pow_cassetto_2, index:7 temp_cassetto_3, index:8 pow_cassetto_3, index:9 temp_cassetto_4, index:10 pow_cassetto_4, index:11 temp_cassetto_5, index:12 pow_cassetto_5, index:13 temp_cassetto_6, index:14 pow_cassetto_6
-
                 writer.writerow([
                     elapsed_seconds, current_time_str, valore_vuoto_macchina, temp_cassetto_1, pow_cassetto_1, temp_cassetto_2, pow_cassetto_2, temp_cassetto_3, pow_cassetto_3, temp_cassetto_4, pow_cassetto_4, temp_cassetto_5, pow_cassetto_5, temp_cassetto_6, pow_cassetto_6
                 ])

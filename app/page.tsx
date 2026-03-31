@@ -438,7 +438,6 @@ const charts = useMemo(
     { name: "", max: 4095, unit: "MW Power Cassetto 2 (%)", data: displayMwPower2Data, color: "rgba(98,131,149,0.5)" }, // ← CAMBIATO
     { name: "", max: 100, unit: "Temp Cassetto 3 (°C)", data: temp3Data, color: "rgba(150, 70, 54, 0.5)" },
     { name: "", max: 4095, unit: "MW Power Cassetto 3 (%)", data: displayMwPower3Data, color: "rgba(98,131,149,0.5)" }, // ← CAMBIATO
-    // ... resto uguale
   ],
   [temp1Data, displayMwPower1Data, temp2Data, displayMwPower2Data, temp3Data, displayMwPower3Data, temp4Data, mwPower4Data, temp5Data, mwPower5Data, temp6Data, mwPower6Data]
 );
