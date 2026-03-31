@@ -52,20 +52,10 @@ MW_TEMP_DRAWER_5 = TEMP_2_2
 MW_POWER_DRAWER_6 = POW_2_3
 MW_TEMP_DRAWER_6 = TEMP_2_3
 
-#SET_MW_TO_VALUE
-SET_REQUEST_URL_CHANGE_PW = (
-    f"https://{IP_TO_BE_USED}/api/set/op?op=MW&index=246&val=800"
-)
-
-SET_REQUEST_URL_SET_M = (
-    f"https://{IP_TO_BE_USED}/api/set/op?op=M&index=1&val=0"
-)
-
-
 #f"https://192.168.151.102/api/get/data?elm="
 # Build URL with '+' as separator
 GET_REQUEST_URL = (
-    f"https://{IP_TO_BE_USED}/api/set/op?op=MW&index=1&val=68"
+    f"https://{IP_TO_BE_USED}/api/set/op?op=MW&index=1&val=151"
 )
 #scrivi M239
 SINGLE_GET_REQUEST_URL = (
